@@ -19,7 +19,7 @@ mod tests {
     use tokio_test::assert_ok;
     use crate::handler::{
         query_output::QueryOutput,
-        query_output::query_execution::QueryExecution,
+        query_output::execution::Execution,
         handle
     };
 
@@ -28,7 +28,7 @@ mod tests {
         let event = QueryOutput {
             query: Some(String::from("dummy")),
             request_id: Some(String::from("1234")),
-            execution: Some(QueryExecution::default())
+            execution: Some(Execution::default())
         };
         let event: LambdaEvent<QueryOutput> = LambdaEvent::<QueryOutput> {
             payload: event,
