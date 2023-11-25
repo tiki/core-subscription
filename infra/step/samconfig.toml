@@ -6,6 +6,12 @@ s3_bucket = "mytiki-sam-deploy"
 s3_prefix = "core/subscription/step"
 region = "us-east-2"
 
+[default.build.parameters]
+beta_features = true
+
+[default.sync.parameters]
+beta_features = true
+
 [default.deploy.parameters]
 confirm_changeset = false
 capabilities = [

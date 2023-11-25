@@ -11,8 +11,72 @@ Parameters:
     Description: Name of the cloudwatch log group
     Type: String
     Default: core-subscription-step
+  AccountUrl:
+    Description: Account service URL to POST results to
+    Type: String
+    Default: "https://account.mytiki.com/api/latest/result"
 
 Resources:
+  Log:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref LogGroup
+      RetentionInDays: 30
+
+  Function:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: rust-cargolambda
+    Properties:
+      CodeUri: ../..
+      Handler: bootstrap
+      Runtime: provided.al2
+      MemorySize: 128
+      Timeout: 10
+      Architectures:
+        - x86_64
+
+  Step:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: CoreSubscription
+      RoleArn: !GetAtt Role.Arn
+      LoggingConfiguration:
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt Log.Arn
+        IncludeExecutionData: true
+        Level: ERROR
+      Definition:
+        Comment: Asynchronously execute subscription queries
+        StartAt: StartQueryExecution
+        States:
+          StartQueryExecution:
+            Type: Task
+            Resource: arn:aws:states:::athena:startQueryExecution.sync
+            Parameters:
+              "QueryString.$": "$.Query"
+              WorkGroup: !Ref WorkGroup
+            ResultPath: $.Execution
+            Next: LambdaInvoke
+          LambdaInvoke:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            OutputPath: $.Payload
+            Parameters:
+              "Payload.$": "$"
+              FunctionName: !Sub [ "${Arn}:$LATEST", { Arn: !GetAtt Function.Arn } ]
+            Retry:
+              - ErrorEquals:
+                  - Lambda.ServiceException
+                  - Lambda.AWSLambdaException
+                  - Lambda.SdkClientException
+                  - Lambda.TooManyRequestsException
+                IntervalSeconds: 1
+                MaxAttempts: 3
+                BackoffRate: 2
+            End: true
+
   Role:
     Type: AWS::IAM::Role
     Properties:
@@ -106,33 +170,3 @@ Resources:
                 NotResource:
                   - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/ocean
                   - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/ocean/*
-
-  Log:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Ref LogGroup
-      RetentionInDays: 30
-
-  Step:
-    Type: AWS::StepFunctions::StateMachine
-    Properties:
-      StateMachineName: CoreSubscription
-      RoleArn: !GetAtt Role.Arn
-      LoggingConfiguration:
-        Destinations:
-          - CloudWatchLogsLogGroup:
-              LogGroupArn: !GetAtt Log.Arn
-        IncludeExecutionData: true
-        Level: ERROR
-      Definition:
-        Comment: Asynchronously execute subscription queries
-        StartAt: StartQueryExecution
-        States:
-          StartQueryExecution:
-            Type: Task
-            Resource: arn:aws:states:::athena:startQueryExecution.sync
-            Parameters:
-              "QueryString.$": "$.Query"
-              WorkGroup: !Ref WorkGroup
-            ResultPath: $.QueryExecutionId
-            End: True
