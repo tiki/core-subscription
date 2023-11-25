@@ -1,0 +1,93 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Core Subscription Role
+
+Parameters:
+  RoleName:
+    Description: Name of the IAM Role for the deployment
+    Type: String
+    Default: "GitHubDeployCoreSubscription"
+
+Resources:
+  Role:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:us-east-2:${AWS::AccountId}:applications/core-aws-github-role
+        SemanticVersion: 0.0.3
+      Parameters:
+        GitHubOrg: tiki
+        RepositoryName: core-subscription
+        RoleName: !Ref RoleName
+
+  Policy:
+    Type: AWS::IAM::RolePolicy
+    DependsOn: Role
+    Properties:
+      RoleName: !Ref RoleName
+      PolicyName: DeploymentPolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: cloudformation:*
+            Resource:
+              - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/core-subscription-*
+              - !Sub arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
+          - Effect: Allow
+            Action: cloudformation:ListStacks
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+              - s3:GetObject
+            Resource: arn:aws:s3:::mytiki-sam-deploy/*
+          - Effect: Allow
+            Action:
+              - iam:CreateRole
+              - iam:GetRole
+              - iam:UpdateRole
+              - iam:DeleteRole
+              - iam:TagRole
+              - iam:GetRolePolicy
+              - iam:PutRolePolicy
+              - iam:DeleteRolePolicy
+              - iam:AttachRolePolicy
+              - iam:DetachRolePolicy
+            Resource:
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/core-subscription-step-FunctionRole-*
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/StepFunctionCoreSubscription
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:PutRetentionPolicy
+              - logs:DescribeLogGroups
+            Resource:
+              - "*"
+          - Effect: Allow
+            Action:
+              - lambda:CreateFunction
+              - lambda:TagResource
+              - lambda:GetFunction
+              - lambda:UpdateFunctionCode
+              - lambda:UpdateFunctionConfiguration
+              - lambda:ListTags
+              - lambda:AddPermission
+            Resource: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:*
+          - Effect: Allow
+            Action: iam:PassRole
+            Resource:
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/core-subscription-step-*
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/StepFunctionCoreSubscription
+            Condition:
+              StringEquals:
+                iam:PassedToService:
+                  - lambda.amazonaws.com
+                  - states.amazonaws.com
+          - Effect: Allow
+            Action:
+              - states:CreateStateMachine
+              - states:PublishStateMachineVersion
+              - states:TagResource
+            Resource:
+              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:CoreSubscription
