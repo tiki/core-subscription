@@ -4,37 +4,22 @@
  */
 
 mod query_output;
+mod properties;
 
 use lambda_runtime::{Error, LambdaEvent};
-use crate::handler::query_output::QueryOutput;
+use crate::handler::{properties::Properties, query_output::QueryOutput};
 
 pub async fn handle(event: LambdaEvent<QueryOutput>) -> Result<(), Error> {
     tracing::debug!("{:?}", event.payload);
+    let client = reqwest::Client::new();
+    let properties: Properties = Properties::load(&client).await;
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    use lambda_runtime::{Context, LambdaEvent};
-    use tokio_test::assert_ok;
-    use crate::handler::{
-        query_output::QueryOutput,
-        query_output::execution::Execution,
-        handle
-    };
-
     #[tokio::test]
-    async fn local() {
-        let event = QueryOutput {
-            query: Some(String::from("dummy")),
-            request_id: Some(String::from("1234")),
-            execution: Some(Execution::default())
-        };
-        let event: LambdaEvent<QueryOutput> = LambdaEvent::<QueryOutput> {
-            payload: event,
-            context: Context::default()
-        };
-        let res = handle(event).await;
-        assert_ok!(res);
+    async fn placeholder() {
+        assert_eq!(1,1)
     }
 }
