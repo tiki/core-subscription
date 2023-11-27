@@ -12,9 +12,9 @@ Parameters:
     Type: String
     Default: core-subscription-step
   AccountUrl:
-    Description: Account service URL to POST results to
+    Description: Account service URL to send results
     Type: String
-    Default: "https://account.mytiki.com/api/latest/result"
+    Default: "https://account.mytiki.com"
 
 Resources:
   Log:
@@ -33,8 +33,21 @@ Resources:
       Runtime: provided.al2
       MemorySize: 128
       Timeout: 10
+      Environment:
+        Variables:
+          ACCOUNT_URL: !Ref AccountUrl
+          SECRET_ARN: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:core/account/subscription-ztHIBD
       Architectures:
         - x86_64
+      Layers:
+        - arn:aws:lambda:us-east-2:590474943231:layer:AWS-Parameters-and-Secrets-Lambda-Extension:11
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:core/account/subscription-ztHIBD
+
 
   Step:
     Type: AWS::StepFunctions::StateMachine
