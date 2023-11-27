@@ -21,11 +21,6 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: cargo-lambda
-        run: |
-          brew tap cargo-lambda/cargo-lambda
-          brew install cargo-lambda
-
       - name: SetVars
         run: |
           sed -i 's/${AWS::AccountId}/${{ secrets.AWS_ACCOUNT_ID }}/' infra/role/template.yml
