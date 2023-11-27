@@ -12,9 +12,9 @@ Parameters:
     Type: String
     Default: core-subscription-step
   AccountUrl:
-    Description: Account service URL to POST results to
+    Description: Account service URL to send results
     Type: String
-    Default: "https://account.mytiki.com/api/latest/ocean"
+    Default: "https://account.mytiki.com"
 
 Resources:
   Log:
