@@ -26,10 +26,11 @@ impl AccessToken {
             ("client_secret", &properties.client_secret)
         ];
         let response  = client
-            .post(format!("{}/api/latet/auth", properties.account_url))
+            .post(format!("{}/api/latest/auth/token", properties.account_url))
             .form(&params)
             .send()
-            .await?;
+            .await?
+            .error_for_status()?;
         let token: AccessToken = response.json().await?;
         return Ok(token);
     }
