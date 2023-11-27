@@ -12,9 +12,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  Deploy:
-#    if: github.event.pull_request.merged == true && startsWith(github.head_ref, 'release/')
-    runs-on: macos-latest
+  role:
+    #    if: github.event.pull_request.merged == true && startsWith(github.head_ref, 'release/')
+    runs-on: ubuntu-latest
     environment: Production
     permissions:
       id-token: write
@@ -43,6 +43,20 @@ jobs:
           sam build
           sam package
           sam deploy
+
+  deploy:
+    runs-on: macos-latest
+    environment: Production
+    needs: Role
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: cargo-lambda
+        run: |
+          brew tap cargo-lambda/cargo-lambda
+          brew install cargo-lambda
 
       - name: AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
