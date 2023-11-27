@@ -65,7 +65,7 @@ jobs:
           cd infra/step
           sam build
           sam package
-          sam publish
+          sam deploy
 
       - name: Get Version
         id: version
